@@ -1,0 +1,31 @@
+{
+  "name": "PureScript Vite App",
+  "image": "ghcr.io/junghunleephd/purescript-template-env:latest",
+  "forwardPorts": [5173],
+  "postCreateCommand": "npm install && spago install",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "editor.formatOnSave": true,
+        "[purescript]": {
+          "editor.defaultFormatter": "nwolverson.ide-purescript"
+        },
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[css]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[html]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
+      },
+      "extensions": [
+        "nwolverson.ide-purescript",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}

@@ -1,0 +1,17 @@
+package:
+  name: my-purescript-app
+  dependencies:
+    - console
+    - effect
+    - exceptions
+    # ADD THESE FOUR DEPENDENCIES:
+    - maybe
+    - prelude
+    - react-basic-dom
+    - react-basic-hooks
+    - web-dom
+    - web-html
+
+workspace:
+  packageSet:
+    registry: 46.0.0
