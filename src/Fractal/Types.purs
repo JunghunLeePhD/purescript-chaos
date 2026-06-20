@@ -1,6 +1,7 @@
 module Fractal.Types where
 
 import Prelude
+import Data.Number (sqrt)
 
 data Complex = Complex Number Number
 
@@ -16,6 +17,12 @@ instance semiringComplex :: Semiring Complex where
 
 instance ringComplex :: Ring Complex where
   sub (Complex r1 i1) (Complex r2 i2) = Complex (r1 - r2) (i1 - i2)
+
+class Ring a <= NormedRing a where
+  norm :: a -> Number
+
+instance normedRingComplex :: NormedRing Complex where
+  norm (Complex r i) = sqrt (r * r + i * i)
 
 data Screen = Screen Int Int
 
