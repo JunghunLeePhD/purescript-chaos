@@ -1,20 +1,15 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Declarative PureScript App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      body { background-color: #f3f4f6; display: flex; justify-content: center; padding-top: 10vh; }
-    </style>
+    <title>Advanced PureScript Julia Set</title>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div id="app"></div>
+    <h2>Applicative Fractal Renderer</h2>
+    <canvas id="juliaCanvas" width="400" height="400"></canvas>
 
-    <script type="module">
-      import { main } from './output/Main/index.js';
-      main();
-    </script>
+    <script type="module" src="./index.js"></script>
   </body>
 </html>
