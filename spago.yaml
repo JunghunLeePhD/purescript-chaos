@@ -1,16 +1,18 @@
 package:
-  name: my-purescript-app
+  name: chaos
   dependencies:
+    - arrays
+    - canvas
     - console
     - effect
-    - exceptions
-    # ADD THESE FOUR DEPENDENCIES:
+    - either
+    - foldable-traversable
+    - integers
+    - lists
     - maybe
+    - numbers
     - prelude
-    - react-basic-dom
-    - react-basic-hooks
-    - web-dom
-    - web-html
+    - transformers
 
 workspace:
   packageSet:
