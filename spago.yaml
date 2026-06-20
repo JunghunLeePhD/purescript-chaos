@@ -2,6 +2,7 @@ package:
   name: chaos
   dependencies:
     - arrays
+    - assert
     - canvas
     - console
     - effect
@@ -12,6 +13,7 @@ package:
     - maybe
     - numbers
     - prelude
+    - spec
     - transformers
 
 workspace:
