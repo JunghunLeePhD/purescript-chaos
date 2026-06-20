@@ -1,106 +1,70 @@
-module Main
-  ( main
-  ) where
+module Main where
 
 import Prelude
 
-import Data.Array (filter, snoc)
-import Data.Maybe (Maybe(..))
+import Data.Array ((..))
+import Data.Int (floor)
+import Data.Either (Either(..), note)
+import Data.Foldable (foldM, traverse_)
 import Effect (Effect)
-import React.Basic.DOM as R
-import React.Basic.DOM.Client (createRoot, renderRoot)
-import React.Basic.DOM.Events (capture_, targetValue)
-import React.Basic.Events (handler)
-import React.Basic.Hooks (Component, component, useState, (/\))
-import React.Basic.Hooks as React
-import Web.DOM.NonElementParentNode (getElementById)
-import Web.HTML (window)
-import Web.HTML.HTMLDocument (toNonElementParentNode)
-import Web.HTML.Window (document)
+import Effect.Aff (delay, launchAff_)
+import Effect.Class (liftEffect)
+import Effect.Console (log)
+import Control.Monad.Except (runExceptT, except)
+import Control.Monad.Trans.Class (lift)
+import Data.Time.Duration (Milliseconds(..))
+import Graphics.Canvas (getCanvasElementById, getContext2D, setFillStyle, fillRect, getCanvasWidth, getCanvasHeight)
 
-todoItem :: { text :: String, onDelete :: Effect Unit } -> React.JSX
-todoItem { text: taskString, onDelete: taskAction } =
-  R.li
-    { className:
-        "todo-item flex justify-between p-2 bg-gray-50 mb-2 border rounded"
-    , children:
-        [ R.span_
-            [ R.text taskString ]
-        , R.button
-            { className:
-                "bg-red-500 text-white px-2 py-1 rounded"
-            , onClick:
-                capture_ taskAction
-            , children:
-                [ R.text "✕" ]
-            }
-        ]
-    }
-
-mkTodoApp :: Component {}
-mkTodoApp = component "TodoApp" \_ -> React.do
-  todos /\ setTodos <- useState ([] :: Array String)
-  inputText /\ setInputText <- useState ""
-
-  let
-    handleInputChange = handler targetValue \mVal ->
-      case mVal of
-        Just val -> setInputText $ const val
-        Nothing -> pure unit
-
-    -- <<< is the usual composition of functions
-    addTodo = setTodos <<< flip snoc
-    handleAdd = capture_ do
-      if inputText == "" then pure unit
-      else do
-        addTodo inputText
-        setInputText $ const ""
-
-    handleDelete taskToDelete =
-      setTodos $ filter (_ /= taskToDelete)
-
-  pure $ R.div
-    { className:
-        "todo-app p-6 bg-white rounded-xl shadow-lg max-w-sm"
-    , children:
-        [ R.h2
-            { className:
-                "text-2xl font-bold mb-4 text-gray-800"
-            , children:
-                [ R.text "Functional Tasks" ]
-            }
-        , R.div
-            { className:
-                "input-group flex gap-2 mb-4"
-            , children:
-                [ R.input
-                    { value: inputText
-                    , onChange: handleInputChange
-                    , placeholder: "Add a task..."
-                    , className: "flex-1 p-2 border rounded"
-                    }
-                , R.button
-                    { onClick: handleAdd
-                    , className:
-                        "bg-indigo-600 text-white px-4 py-2 rounded"
-                    , children:
-                        [ R.text "Add" ]
-                    }
-                ]
-            }
-        , R.ul_ $ todos <#> todoItem <<< \text ->
-            { text, onDelete: handleDelete text }
-        ]
-    }
+import Fractal.Types (Complex(..), Screen(..))
+import Fractal.Algorithm (JuliaSet(..), calculatePixel)
 
 main :: Effect Unit
-main = do
-  doc <- document =<< window
-  container <- getElementById "app" $ toNonElementParentNode doc
+main = launchAff_ do
+  finalResult <- runExceptT do
+    mCanvas <-
+      lift $ liftEffect $ getCanvasElementById "juliaCanvas"
+    canvas <-
+      except $ note "Canvas element 'juliaCanvas' not found!" mCanvas
 
-  case container of
-    Nothing -> pure unit
-    Just el -> do
-      app <- mkTodoApp
-      root <- createRoot el
-      renderRoot root $ app {}
+    ctx <- lift $ liftEffect $ getContext2D canvas
+    wNum <- lift $ liftEffect $ getCanvasWidth canvas
+    hNum <- lift $ liftEffect $ getCanvasHeight canvas
+
+    let
+      width = floor wNum
+      height = floor hNum
+      screen = Screen width height
+      viewPlane =
+        { xMin: -1.5
+        , xMax: 1.5
+        , yMin: -1.5
+        , yMax: 1.5
+        }
+      maxIter = 100
+      myFractal = JuliaSet (Complex (-0.8) 0.156)
+      processCoord = calculatePixel screen viewPlane maxIter myFractal
+
+    lift $ liftEffect $ log "Painting fractal row-by-row functionally..."
+
+    lift $ foldM
+      ( \_ px -> do
+          let rowPixels = processCoord px <$> (0 .. width)
+          liftEffect $ traverse_
+            ( \{ x, y, color } -> do
+                setFillStyle ctx color
+                fillRect ctx
+                  { x
+                  , y
+                  , width: 1.0
+                  , height: 1.0
+                  }
+            )
+            rowPixels
+          delay $ Milliseconds 0.0
+      )
+      unit
+      (0 .. height)
+
+  case finalResult of
+    Left errorMsg -> liftEffect $ log errorMsg
+    Right _ -> liftEffect $ log "Julia set rendered successfully!"
