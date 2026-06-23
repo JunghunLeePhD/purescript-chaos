@@ -36,6 +36,9 @@ escapeTime isOk fs z =
 isBounded :: Complex -> Boolean
 isBounded z = norm z < 4.0
 
+getEscapeTime :: List EndoComplex -> Complex -> Maybe Int
+getEscapeTime fs z = findIndex (not <<< isBounded) (act fs z)
+
 escapeTimeOfJuliaSet :: Int -> Complex -> Complex -> Maybe Int
 escapeTimeOfJuliaSet n c z =
   escapeTime isBounded (quadraticFF n c) z
