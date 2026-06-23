@@ -2,9 +2,25 @@ module JuliaSet.Algorithm where
 
 import Prelude
 
-import Data.List.Lazy (List, findIndex)
+import Data.List.Lazy
+  ( List
+  , findIndex
+  , repeat
+  )
 import Data.Maybe (Maybe)
-import Types.Action (class PolymorphicAction, act)
+import Data.Monoid.Endo (Endo(..))
+import Types.Action
+  ( class PolymorphicAction
+  , act
+  , EndoComplex
+  )
+import Types.NRing (Complex)
+
+quadraticF :: Complex -> List EndoComplex
+quadraticF c = repeat $ quadratic c
+  where
+  quadratic :: Complex -> EndoComplex
+  quadratic c' = Endo $ \z -> z * z + c'
 
 escapeTime
   :: forall actor target
