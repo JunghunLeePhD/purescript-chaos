@@ -1,4 +1,4 @@
-module Type.ComplexNumber where
+module Types.NRing where
 
 import Prelude
 import Data.Number (sqrt)
