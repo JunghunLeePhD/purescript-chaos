@@ -6,7 +6,8 @@ import Data.Number (sqrt)
 class Ring a <= NormedRing a where
   norm :: a -> Number
 
-data Complex = Complex Number Number
+type Real = Number
+data Complex = Complex Real Real
 
 derive instance eqComplex :: Eq Complex
 instance showComplex :: Show Complex where
