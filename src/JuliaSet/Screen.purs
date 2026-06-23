@@ -30,3 +30,9 @@ pixelToComplex (Pixel px py) = do
     zx = xMin + xRatio * (xMax - xMin)
     zy = yMin + yRatio * (yMax - yMin)
   pure $ Complex zx zy
+
+getPixelJulia :: List EndoComplex -> Pixel -> Reader RenderEnv PixelWithColor
+getPixelJulia fs pixel@(Pixel px py) = do
+  complexZ <- pixelToComplex pixel
+  let color = getColor fs complexZ
+  pure $ PixelWithColor px py color
