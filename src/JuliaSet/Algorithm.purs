@@ -8,7 +8,7 @@ import Data.List.Lazy
   , repeat
   , take
   )
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Monoid.Endo (Endo(..))
 import Types.Action
   ( class PolymorphicAction
@@ -42,3 +42,10 @@ escapeTimeOfJuliaSet n c z =
   where
   quadraticFF :: Int -> Complex -> List EndoComplex
   quadraticFF n' c' = take n' $ quadraticF c'
+
+getColorOfJuliaSet :: Int -> Complex -> Complex -> String
+getColorOfJuliaSet n c z = getColor $ escapeTimeOfJuliaSet n c z
+  where
+  getColor :: Maybe Int -> String
+  getColor Nothing = "#000000"
+  getColor (Just n') = "hsl(" <> show (n' * 5) <> ", 100%, 50%)"
