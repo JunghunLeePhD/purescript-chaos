@@ -4,11 +4,15 @@ import Prelude
 
 import Data.List.Lazy
   ( List
-  , scanl
   , takeWhile
+  , scanl
+  , repeat
   )
 import Data.Monoid.Endo (Endo)
 import Data.Newtype (unwrap)
+
+cyclic :: forall a. Endo (->) a -> List (Endo (->) a)
+cyclic = repeat
 
 class PolymorphicAction actor target result | actor target -> result where
   act :: actor -> target -> result
