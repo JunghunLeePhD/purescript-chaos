@@ -1,4 +1,4 @@
-module JuliaSet.Screen where
+module JuliaSet.Figure where
 
 import Prelude
 
