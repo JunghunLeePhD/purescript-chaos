@@ -6,7 +6,6 @@ import Data.List.Lazy
   ( List
   , takeWhile
   , scanl
-  , repeat
   )
 import Data.Monoid.Endo (Endo)
 import Data.Newtype (unwrap)
@@ -15,9 +14,6 @@ import Types.NRing (Real, Complex)
 
 type EndoReal = Endo (->) Real
 type EndoComplex = Endo (->) Complex
-
-cyclic :: forall a. Endo (->) a -> List (Endo (->) a)
-cyclic = repeat
 
 class PolymorphicAction actor target result | actor target -> result where
   act :: actor -> target -> result
