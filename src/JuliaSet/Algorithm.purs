@@ -23,9 +23,6 @@ quadraticF c = repeat $ quadratic c
   quadratic :: Complex -> EndoComplex
   quadratic c' = Endo $ \z -> z * z + c'
 
-quadraticFF :: Int -> Complex -> List EndoComplex
-quadraticFF n c = take n $ quadraticF c
-
 escapeTime
   :: forall actor target
    . (PolymorphicAction (List actor) target (List target))
@@ -38,3 +35,10 @@ escapeTime isOk fs z =
 
 isBounded :: Complex -> Boolean
 isBounded z = norm z < 4.0
+
+escapeTimeOfJuliaSet :: Int -> Complex -> Complex -> Maybe Int
+escapeTimeOfJuliaSet n c z =
+  escapeTime isBounded (quadraticFF n c) z
+  where
+  quadraticFF :: Int -> Complex -> List EndoComplex
+  quadraticFF n' c' = take n' $ quadraticF c'
