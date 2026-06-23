@@ -15,7 +15,7 @@ import Types.Action
   , act
   , EndoComplex
   )
-import Types.NRing (Complex)
+import Types.NRing (Complex, norm)
 
 quadraticF :: Complex -> List EndoComplex
 quadraticF c = repeat $ quadratic c
@@ -35,3 +35,6 @@ escapeTime
   -> Maybe Int
 escapeTime isOk fs z =
   findIndex (not <<< isOk) (act fs z)
+
+isBounded :: Complex -> Boolean
+isBounded z = norm z < 4.0
