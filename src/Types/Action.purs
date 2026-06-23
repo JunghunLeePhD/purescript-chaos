@@ -11,6 +11,11 @@ import Data.List.Lazy
 import Data.Monoid.Endo (Endo)
 import Data.Newtype (unwrap)
 
+import Types.NRing (Real, Complex)
+
+type EndoReal = Endo (->) Real
+type EndoComplex = Endo (->) Complex
+
 cyclic :: forall a. Endo (->) a -> List (Endo (->) a)
 cyclic = repeat
 
