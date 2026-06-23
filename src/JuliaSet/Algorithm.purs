@@ -6,6 +6,7 @@ import Data.List.Lazy
   ( List
   , findIndex
   , repeat
+  , take
   )
 import Data.Maybe (Maybe)
 import Data.Monoid.Endo (Endo(..))
@@ -21,6 +22,9 @@ quadraticF c = repeat $ quadratic c
   where
   quadratic :: Complex -> EndoComplex
   quadratic c' = Endo $ \z -> z * z + c'
+
+quadraticFF :: Int -> Complex -> List EndoComplex
+quadraticFF n c = take n $ quadraticF c
 
 escapeTime
   :: forall actor target
