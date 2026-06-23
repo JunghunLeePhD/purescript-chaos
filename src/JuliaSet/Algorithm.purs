@@ -39,6 +39,13 @@ isBounded z = norm z < 4.0
 getEscapeTime :: List EndoComplex -> Complex -> Maybe Int
 getEscapeTime fs z = findIndex (not <<< isBounded) (act fs z)
 
+getColor :: List EndoComplex -> Complex -> String
+getColor fs z = orbitToColor $ getEscapeTime fs z
+  where 
+    orbitToColor :: Maybe Int -> String
+    orbitToColor Nothing = "#000000"
+    orbitToColor (Just n') = "hsl(" <> show (n' * 5) <> ", 100%, 50%)"
+
 escapeTimeOfJuliaSet :: Int -> Complex -> Complex -> Maybe Int
 escapeTimeOfJuliaSet n c z =
   escapeTime isBounded (quadraticFF n c) z
