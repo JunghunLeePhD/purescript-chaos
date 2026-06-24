@@ -17,6 +17,7 @@ data PixelWithColor = PixelWithColor Int Int String
 type RenderEnv =
   { screen :: Screen
   , plane :: Plane
+  , fs :: List EndoComplex
   }
 
 pixelToComplex :: Pixel -> Reader RenderEnv Complex
@@ -31,8 +32,9 @@ pixelToComplex (Pixel px py) = do
     zy = yMin + yRatio * (yMax - yMin)
   pure $ Complex zx zy
 
-getPixelWithColor :: List EndoComplex -> Pixel -> Reader RenderEnv PixelWithColor
-getPixelWithColor fs pixel@(Pixel px py) = do
+getPixelWithColor :: Pixel -> Reader RenderEnv PixelWithColor
+getPixelWithColor pixel@(Pixel px py) = do
+  { fs } <- ask
   complexZ <- pixelToComplex pixel
   let color = getColor fs complexZ
   pure $ PixelWithColor px py color
