@@ -4,48 +4,42 @@ import Prelude
 
 import Control.Monad.Reader (runReader)
 import Data.Array ((..))
-import Data.Foldable (foldM)
 import Data.List.Lazy (take, repeat)
 import Data.Monoid.Endo (Endo(..))
-import Data.Time.Duration (Milliseconds(..))
 import Effect (Effect)
-import Effect.Aff (delay, launchAff_)
-import Effect.Class (liftEffect)
+
 import JuliaSet.Figure (Pixel(..), PixelWithColor(..), Plane(..), Screen(..), getPixelWithColor)
 import Types.NRing (Complex(..))
+import Types (TaskMsg, ResultMsg)
 
-import Types (StartMsg, RowMsg)
+foreign import onTaskMessage :: (TaskMsg -> Effect Unit) -> Effect Unit
+foreign import postResultToMain :: ResultMsg -> Effect Unit
 
-foreign import onStartMessage :: (StartMsg -> Effect Unit) -> Effect Unit
-foreign import postRowToMain :: RowMsg -> Effect Unit
+calculateRow :: TaskMsg -> Array String
+calculateRow { y, width, height } =
+  let
+    renderEnv =
+      { screen: Screen width height
+      , plane: Plane (-1.5) 1.5 (-1.5) 1.5
+      }
+
+    fs =
+      take 200 $ repeat $ Endo (\z -> z * z + (Complex (-0.8) 0.156))
+  in
+
+    ( \px ->
+        let
+          (PixelWithColor _ _ color) =
+            runReader (getPixelWithColor fs (Pixel px y)) renderEnv
+        in
+          color
+    ) <$>
+      (0 .. width)
 
 main :: Effect Unit
 main = do
-  onStartMessage \{ width, height } -> do
+  onTaskMessage \msg@{ y } -> do
     let
-      renderEnv =
-        { screen: Screen width height
-        , plane: Plane (-1.5) 1.5 (-1.5) 1.5
-        }
+      rowColors = calculateRow msg
 
-      fs = take 400 $ repeat $ Endo (\z -> z * z + (Complex (-0.8) 0.156))
-
-    launchAff_ do
-      foldM
-        ( \_ py -> do
-            let
-              rowColors =
-                ( \px ->
-                    let
-                      (PixelWithColor _ _ color) =
-                        runReader (getPixelWithColor fs (Pixel px py)) renderEnv
-                    in
-                      color
-                ) <$>
-                  (0 .. width)
-            liftEffect $ postRowToMain { y: py, colors: rowColors }
-            delay $ Milliseconds 0.0
-
-        )
-        unit
-        (0 .. height)
+    postResultToMain { y, colors: rowColors }

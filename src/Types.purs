@@ -1,11 +1,4 @@
 module Types where
 
-type StartMsg =
-  { width :: Int
-  , height :: Int
-  }
-
-type RowMsg =
-  { y :: Int
-  , colors :: Array String
-  }
+type TaskMsg = { y :: Int, width :: Int, height :: Int }
+type ResultMsg = { y :: Int, colors :: Array String }
