@@ -21,16 +21,14 @@ calculateRow { y, width, height } =
     renderEnv =
       { screen: Screen width height
       , plane: Plane (-1.5) 1.5 (-1.5) 1.5
+      , fs:
+          take 200 $ repeat $ Endo (\z -> z * z + (Complex (-0.8) 0.156))
       }
-
-    fs =
-      take 200 $ repeat $ Endo (\z -> z * z + (Complex (-0.8) 0.156))
   in
-
     ( \px ->
         let
           (PixelWithColor _ _ color) =
-            runReader (getPixelWithColor fs (Pixel px y)) renderEnv
+            runReader (getPixelWithColor (Pixel px y)) renderEnv
         in
           color
     ) <$>
