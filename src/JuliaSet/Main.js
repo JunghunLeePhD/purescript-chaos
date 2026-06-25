@@ -1,7 +1,7 @@
 export const getHardwareConcurrency = () => navigator.hardwareConcurrency || 4;
 
 export const createWorker = () => {
-  return new Worker(new URL("../../src/worker.js", import.meta.url), {
+  return new Worker(new URL("/src/JuliaSet/worker.js", import.meta.url), {
     type: "module",
   });
 };
