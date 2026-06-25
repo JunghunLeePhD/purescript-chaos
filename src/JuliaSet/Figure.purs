@@ -3,9 +3,11 @@ module JuliaSet.Figure where
 import Prelude
 
 import Control.Monad.Reader (Reader, ask)
-import Data.List.Lazy (List)
 import Data.Int (toNumber)
-import JuliaSet.Algorithm (getColor)
+import Data.List.Lazy (List)
+import Data.Maybe (Maybe(..))
+
+import JuliaSet.Algorithm (getEscapeTime)
 import Types.Action (EndoComplex)
 import Types.NRing (Complex(..))
 
@@ -31,6 +33,13 @@ pixelToComplex (Pixel px py) = do
     zx = xMin + xRatio * (xMax - xMin)
     zy = yMin + yRatio * (yMax - yMin)
   pure $ Complex zx zy
+
+getColor :: List EndoComplex -> Complex -> String
+getColor fs z = orbitToColor $ getEscapeTime fs z
+  where
+  orbitToColor :: Maybe Int -> String
+  orbitToColor Nothing = "#000000"
+  orbitToColor (Just n') = "hsl(" <> show (n' * 5) <> ", 100%, 50%)"
 
 getPixelWithColor :: Pixel -> Reader RenderEnv PixelWithColor
 getPixelWithColor pixel@(Pixel px py) = do
