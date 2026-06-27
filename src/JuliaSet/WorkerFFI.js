@@ -1,7 +1,7 @@
-export const onTaskMessage = (callback) => () => {
+export const getRequest = (callback) => () => {
   self.onmessage = (e) => callback(e.data)();
 };
 
-export const postResultToMain = (msg) => () => {
+export const sendResponse = (msg) => () => {
   self.postMessage(msg);
 };

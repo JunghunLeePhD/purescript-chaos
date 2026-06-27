@@ -4,46 +4,24 @@ import Prelude
 
 import Control.Monad.Reader (Reader, ask)
 import Data.Int (toNumber)
-import Data.List.Lazy (List)
-import Data.Maybe (Maybe(..))
 
-import JuliaSet.Algorithm (getEscapeTime)
-import Types.Action (EndoComplex)
 import Types.NRing (Complex(..))
 
-data Screen = Screen Int Int
-data Plane = Plane Number Number Number Number
-data Pixel = Pixel Int Int
-data PixelWithColor = PixelWithColor Int Int String
+type Screen = { width :: Int, height :: Int }
+type Plane = { xMin :: Number, xMax :: Number, yMin :: Number, yMax :: Number }
+type Pixel = { px :: Int, py :: Int }
 
 type RenderEnv =
   { screen :: Screen
   , plane :: Plane
-  , fs :: List EndoComplex
   }
 
 pixelToComplex :: Pixel -> Reader RenderEnv Complex
-pixelToComplex (Pixel px py) = do
-  env <- ask
+pixelToComplex { px, py } = do
+  { screen, plane } <- ask
   let
-    (Screen w h) = env.screen
-    (Plane xMin xMax yMin yMax) = env.plane
-    xRatio = toNumber px / toNumber w
-    yRatio = toNumber py / toNumber h
-    zx = xMin + xRatio * (xMax - xMin)
-    zy = yMin + yRatio * (yMax - yMin)
+    xRatio = toNumber px / toNumber screen.width
+    yRatio = toNumber py / toNumber screen.height
+    zx = plane.xMin + xRatio * (plane.xMax - plane.xMin)
+    zy = plane.yMin + yRatio * (plane.yMax - plane.yMin)
   pure $ Complex zx zy
-
-getColor :: List EndoComplex -> Complex -> String
-getColor fs z = orbitToColor $ getEscapeTime fs z
-  where
-  orbitToColor :: Maybe Int -> String
-  orbitToColor Nothing = "#000000"
-  orbitToColor (Just n') = "hsl(" <> show (n' * 5) <> ", 100%, 50%)"
-
-getPixelWithColor :: Pixel -> Reader RenderEnv PixelWithColor
-getPixelWithColor pixel@(Pixel px py) = do
-  { fs } <- ask
-  complexZ <- pixelToComplex pixel
-  let color = getColor fs complexZ
-  pure $ PixelWithColor px py color

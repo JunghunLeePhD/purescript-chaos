@@ -3,35 +3,39 @@ module JuliaSet.Main where
 import Prelude
 
 import Control.Monad.Except (runExceptT, except)
-import Data.Array (replicate, (..))
 import Data.Either (Either(..), note)
 import Data.Foldable (traverse_)
-import Data.FoldableWithIndex (traverseWithIndex_)
 import Data.Int (floor, toNumber)
-import Data.List.Lazy as Lazy
+import Data.Array (replicate)
 import Data.Traversable (sequence)
-import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
-import Graphics.Canvas (Context2D, getCanvasElementById, getContext2D, setFillStyle, fillRect, getCanvasWidth, getCanvasHeight)
+import Effect.Ref as Ref -- NEW: Import Ref for our mutable task counter
+import Graphics.Canvas
+  ( Context2D
+  , getCanvasElementById
+  , getCanvasHeight
+  , getCanvasWidth
+  , getContext2D
+  , setFillStyle
+  , fillRect
+  )
 
-import Types.Worker (TaskMsg, ResultMsg)
+import Types.Worker (Request, Response)
 
 foreign import data Worker :: Type
 foreign import getHardwareConcurrency :: Effect Int
 foreign import createWorker :: Effect Worker
-foreign import postToWorker :: Worker -> TaskMsg -> Effect Unit
-foreign import onWorkerMessage :: Worker -> (ResultMsg -> Effect Unit) -> Effect Unit
+foreign import sendRequest :: Worker -> Request -> Effect Unit
+foreign import getResponse :: Worker -> (Response -> Effect Unit) -> Effect Unit
 
 main :: Effect Unit
 main = launchAff_ do
   finalResult <- runExceptT do
-    mCanvas <-
-      liftEffect $ getCanvasElementById "juliaCanvas"
-    canvas <-
-      except $ note "Canvas element 'juliaCanvas' not found!" mCanvas
+    mCanvas <- liftEffect $ getCanvasElementById "juliaCanvas"
+    canvas <- except $ note "Canvas element 'juliaCanvas' not found!" mCanvas
 
     liftEffect $ do
       ctx <- getContext2D canvas
@@ -42,32 +46,52 @@ main = launchAff_ do
       log $ "Booting up " <> show cores <> " workers purely..."
 
       pool <- sequence $ replicate cores createWorker
-      traverse_ (\worker -> onWorkerMessage worker (paintRow ctx)) pool
 
       let
-        workerStream = Lazy.cycle (Lazy.fromFoldable $ pool)
-        taskStream = Lazy.fromFoldable (0 .. height)
-        assignments = Lazy.zip workerStream taskStream
+        totalPixels = width * height
+      nextPixelIndex <- Ref.new 0
+
+      let
+        dispatchNext :: Worker -> Effect Unit
+        dispatchNext worker = do
+          currentIndex <- Ref.read nextPixelIndex
+
+          if currentIndex < totalPixels then do
+            Ref.write (currentIndex + 1) nextPixelIndex
+
+            let
+              px = currentIndex `mod` width
+              py = currentIndex / width
+
+            sendRequest worker { pixel: { px, py } }
+          else
+            pure unit
+
+      traverse_
+        ( \worker ->
+            getResponse worker
+              ( \res -> do
+                  fillColor ctx res
+                  dispatchNext worker
+              )
+        )
+        pool
 
       log "Dispatching math to all cores..."
-      traverse_
-        (\(Tuple worker y) -> postToWorker worker { y, width, height })
-        assignments
+      log "Starting continuous pull-based render..."
+
+      traverse_ dispatchNext pool
 
   case finalResult of
     Left errorMsg -> liftEffect $ log errorMsg
     Right _ -> pure unit
 
-paintRow :: Context2D -> ResultMsg -> Effect Unit
-paintRow ctx { y, colors } = do
-  traverseWithIndex_
-    ( \px color -> do
-        setFillStyle ctx color
-        fillRect ctx
-          { x: toNumber px
-          , y: toNumber y
-          , width: 1.0
-          , height: 1.0
-          }
-    )
-    colors
+fillColor :: Context2D -> Response -> Effect Unit
+fillColor ctx { pixel: { px, py }, color } = do
+  setFillStyle ctx color
+  fillRect ctx
+    { x: toNumber px
+    , y: toNumber py
+    , width: 1.0
+    , height: 1.0
+    }
