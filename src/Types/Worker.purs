@@ -1,4 +1,12 @@
 module Types.Worker where
 
-type TaskMsg = { y :: Int, width :: Int, height :: Int }
-type ResultMsg = { y :: Int, colors :: Array String }
+import JuliaSet.Figure (Pixel)
+
+type Request =
+  { pixel :: Pixel
+  }
+
+type Response =
+  { pixel :: Pixel
+  , color :: String
+  }

@@ -6,10 +6,10 @@ export const createWorker = () => {
   });
 };
 
-export const postToWorker = (worker) => (msg) => () => {
+export const sendRequest = (worker) => (msg) => () => {
   worker.postMessage(msg);
 };
 
-export const onWorkerMessage = (worker) => (callback) => () => {
+export const getResponse = (worker) => (callback) => () => {
   worker.onmessage = (e) => callback(e.data)();
 };
