@@ -4,16 +4,9 @@ module Test.Main
 
 import Prelude
 
-import Data.Array ((..))
-import Data.List.Lazy
-  ( List
-  , take
-  , findIndex
-  , repeat
-  , scanl
-  , fromFoldable
-  , takeWhile
-  )
+import Data.Array ((..), foldl)
+import Data.Foldable (traverse_)
+import Data.List.Lazy (List, findIndex, fromFoldable, repeat, scanl, take, takeWhile)
 import Data.Maybe (Maybe)
 import Data.Monoid.Endo (Endo)
 import Data.Newtype (unwrap)
@@ -94,4 +87,7 @@ type Color =
 
 main :: Effect Unit
 main = do
-  pure unit
+  let
+    pixels :: List Pixel
+    pixels = fromFoldable (0 .. 100)
+  traverse_ (log <<< show) pixels
