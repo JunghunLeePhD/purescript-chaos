@@ -4,6 +4,7 @@ module Test.Main
 
 import Prelude
 
+import Data.Array ((..))
 import Data.List.Lazy
   ( List
   , take
@@ -14,7 +15,7 @@ import Data.List.Lazy
   , takeWhile
   )
 import Data.Maybe (Maybe)
-import Data.Monoid.Endo (Endo(..))
+import Data.Monoid.Endo (Endo)
 import Data.Newtype (unwrap)
 import Data.Number (sqrt)
 import Effect (Effect)
@@ -22,9 +23,6 @@ import Effect.Console (log)
 
 class Ring a <= NormedRing a where
   norm :: a -> Number
-
-cyclic :: forall a. Endo (->) a -> List (Endo (->) a)
-cyclic = repeat
 
 class PolymorphicAction actor target result | actor target -> result where
   act :: actor -> target -> result
@@ -83,24 +81,17 @@ instance normedRingComplex :: NormedRing Complex where
 
 type EndoComplex = Endo (->) Complex
 
-quadratic :: Complex -> EndoComplex
-quadratic c = Endo $ \z -> z * z + c
-
--- colorPixel :: Maybe Int -> String
--- colorPixel Nothing = "#000000"
--- colorPixel (Just n) = "hsl(" <> show (n * 5) <> ", 100%, 50%)"
+-- [Pixel] ->(w/ Screen and Lenz) [Real] ->(w/ actions) [EscapeTime] -> [Color]
+type Pixel = Int
+type Real = Number
+type EndoReal = Endo (->) Real
+type EscapeTime = Int
+type Color =
+  { r :: Int
+  , g :: Int
+  , b :: Int
+  }
 
 main :: Effect Unit
 main = do
-  let
-    base = quadratic (Complex 0.0 0.0)
-    -- endos = base
-    endos = take 10 (cyclic base)
-    -- pts = Complex 0.0 1.02
-    pts = fromFoldable [ Complex 0.0 0.9, Complex 0.0 1.1 ]
-  log $ show $ act endos pts
-  log $ show $ escapeTime isInside endos <$> pts
-  log $ show $ actE isInside endos pts
-  where
-  isInside :: forall a. NormedRing a => a -> Boolean
-  isInside = \z -> norm z < 4.0
+  pure unit
