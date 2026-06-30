@@ -20,12 +20,7 @@
         "[html]": {
           "editor.defaultFormatter": "esbenp.prettier-vscode"
         }
-      },
-      "extensions": [
-        "nwolverson.ide-purescript",
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode"
-      ]
+      }
     }
   }
 }
