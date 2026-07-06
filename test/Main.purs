@@ -67,6 +67,12 @@ type EndoReal = Endo (->) Real
 type EndoComplex = Endo (->) Complex
 type EscapeTime = Maybe Int
 
+type HSLColor =
+  { h :: Int
+  , s :: Int
+  , l :: Int
+  }
+
 main :: Effect Unit
 main = do
   -- Screen -> [Pixel]
@@ -113,27 +119,20 @@ main = do
       mOrbit <- (act endos <$> cpxs)
       pure $ mOrbit >>= findIndex (isNotBounded)
 
-  traverse_ (logShow) et
+  -- [EscapeTime] -> [HSLColor]
+  let
+    etToHSLColor :: EscapeTime -> HSLColor
+    etToHSLColor Nothing =
+      { h: 0
+      , s: 0
+      , l: 0
+      }
+    etToHSLColor (Just n) =
+      { h: n * 5
+      , s: 100
+      , l: 50
+      }
 
--- type HSLColor =
---   { h :: Int
---   , s :: Int
---   , l :: Int
---   }
--- -- [EscapeTime] -> [HSLColor]
--- let
---   etToHSLColor :: EscapeTime -> HSLColor
---   etToHSLColor Nothing =
---     { h: 0
---     , s: 0
---     , l: 0
---     }
---   etToHSLColor (Just n) =
---     { h: n * 5
---     , s: 100
---     , l: 50
---     }
-
---   hslcolors :: List HSLColor
---   hslcolors = etToHSLColor <$> es
--- traverse_ (log <<< show) $ hslcolors
+    hslcolors :: List HSLColor
+    hslcolors = etToHSLColor <$> et
+  traverse_ (logShow) $ hslcolors
