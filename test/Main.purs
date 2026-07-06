@@ -50,23 +50,21 @@ class PolymorphicAction actor target result | actor target -> result where
 instance actEndoAny :: PolymorphicAction (Endo (->) a) a a where
   act = unwrap
 
+else instance actMaybeTarget ::
+  ( PolymorphicAction actor target result
+  ) =>
+  PolymorphicAction actor (Maybe target) (Maybe result) where
+  act actor maybeTarget = act actor <$> maybeTarget
+
 else instance actListEndoAny ::
   PolymorphicAction (List (Endo (->) a)) a (List a) where
   act fs z = scanl (\acc f -> act f acc) z fs
-
-else instance actListEndoListAny ::
-  ( PolymorphicAction (List (Endo (->) a)) a (List a)
-  ) =>
-  PolymorphicAction (List (Endo (->) a)) (List a) (List (List a)) where
-  act fs zs = act fs <$> zs
-
-else instance actFunction :: PolymorphicAction (a -> b) a b where
-  act f x = f x
 
 -- [Pixel] ->(w/ Screen and Lenz) [Real] ->(w/ actions) [EscapeTime] -> [Color]
 type Screen = List Int
 type Pixel = List Int
 type EndoReal = Endo (->) Real
+type EndoComplex = Endo (->) Complex
 type EscapeTime = Maybe Int
 
 main :: Effect Unit
@@ -87,7 +85,7 @@ main = do
     affine :: Real -> Real -> EndoReal
     affine a b = Endo $ \x -> a * x + b
 
-    magnitude = 1.0
+    magnitude = 0.01
 
     normalizer :: List EndoReal
     normalizer = fromFoldable
@@ -101,23 +99,22 @@ main = do
 
     cpxs =
       (fromLazyListToComplex <<< (zipWith act normalizer) <<< map toNumber) <$> pixels
-  traverse_ (logShow) cpxs
 
--- let
---   isBounded :: Real -> Boolean
---   isBounded x = norm x < 2.0
+  let
+    isNotBounded :: Complex -> Boolean
+    isNotBounded z = norm z > 2.0
 
---   getEscapeTime :: List EndoComplex -> Real -> Maybe Int
---   getEscapeTime fs x = findIndex (not <<< isBounded) (act fs x)
+    endos :: List EndoComplex
+    endos = take 3 $ repeat $ Endo $ \z -> z * z + (Complex 0.0 0.0)
 
---   endos :: List EndoReal
---   endos = take 200 $ repeat $ Endo $ \x -> x * x + 0.0
+    et :: List EscapeTime
+    et = do
+      -- mOrbit :: List (Maybe (List Complex))
+      mOrbit <- (act endos <$> cpxs)
+      pure $ mOrbit >>= findIndex (isNotBounded)
 
---   et :: List EscapeTime
---   et =
---     getEscapeTime endos <$> cpxs
+  traverse_ (logShow) et
 
--- traverse_ (logShow) et
 -- type HSLColor =
 --   { h :: Int
 --   , s :: Int
