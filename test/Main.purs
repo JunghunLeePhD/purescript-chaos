@@ -7,7 +7,7 @@ import Prelude
 import Data.Array ((..))
 import Data.Foldable (traverse_)
 import Data.Int (toNumber)
-import Data.List.Lazy (List, findIndex, fromFoldable, length, repeat, scanl, take, takeWhile)
+import Data.List.Lazy (List, findIndex, fromFoldable, length, repeat, scanl, take, takeWhile, zipWith)
 import Data.Maybe (Maybe(..))
 import Data.Monoid.Endo (Endo(..))
 import Data.Newtype (unwrap)
@@ -74,6 +74,7 @@ else instance actEListTarget ::
 -- [Pixel] ->(w/ Screen and Lenz) [Real] ->(w/ actions) [EscapeTime] -> [Color]
 type Screen = List Int
 type Pixel = List Int
+type EndoReal = Endo (->) Real
 
 main :: Effect Unit
 main = do
@@ -88,9 +89,24 @@ main = do
     pixels :: List Pixel
     pixels = generatePixel screen
 
-  traverse_ (log <<< show) pixels
+  -- [Pixel] -> [Real]
+  let
+    affine :: Real -> Real -> EndoReal
+    affine a b = Endo \x -> a * x + b
 
--- type EndoReal = Endo (->) Real
+    magnitude = 1.0
+
+    normalizer :: List EndoReal
+    normalizer = fromFoldable
+      [ affine (1.0 / (magnitude * toNumber width)) (-0.5 / magnitude)
+      , affine (1.0 / (magnitude * toNumber height)) (-0.5 / magnitude)
+      ]
+
+    coord =
+      (zipWith act normalizer <<< map toNumber) <$> pixels
+  -- (zipWith act normalizer) <$> (map toNumber <$> pixels)
+  traverse_ (log <<< show) coord
+
 -- type EscapeTime = Maybe Int
 -- type HSLColor =
 --   { h :: Int
@@ -98,21 +114,6 @@ main = do
 --   , l :: Int
 --   }
 
--- affine :: Real -> Real -> EndoReal
--- affine a b = Endo \x -> a * x + b
-
--- -- [Pixel] -> [Real]
--- let
---   magnitude = 0.1
---   size = toNumber $ length pixels
-
---   normalizer :: EndoReal
---   normalizer =
---     affine (1.0 / (magnitude * size)) (-0.5 / magnitude)
-
---   coord :: List Real
---   coord = act normalizer $ toNumber <$> pixels
--- -- traverse_ (log <<< show) coord
 -- let
 --   isBounded :: Real -> Boolean
 --   isBounded x = norm x < 2.0
