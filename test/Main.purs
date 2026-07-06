@@ -6,14 +6,15 @@ import Prelude
 
 import Data.Array ((..), foldl)
 import Data.Foldable (traverse_)
+import Data.Int (toNumber)
 import Data.List.Lazy (List, findIndex, fromFoldable, repeat, scanl, take, takeWhile, length)
 import Data.Maybe (Maybe)
 import Data.Monoid.Endo (Endo(..))
 import Data.Newtype (unwrap)
 import Data.Number (sqrt)
-import Data.Int (toNumber)
 import Effect (Effect)
 import Effect.Console (log)
+import JuliaSet.Algorithm (getEscapeTime)
 
 class Ring a <= NormedRing a where
   norm :: a -> Number
@@ -65,7 +66,7 @@ instance normedRingReal :: NormedRing Real where
     | otherwise = x
 
 type EndoReal = Endo (->) Real
-type EscapeTime = Int
+type EscapeTime = Maybe Int
 type Color =
   { r :: Int
   , g :: Int
@@ -79,12 +80,12 @@ main :: Effect Unit
 main = do
   let
     pixels :: List Pixel
-    pixels = fromFoldable (0 .. 99)
+    pixels = fromFoldable (0 .. 999)
 
   -- traverse_ (log <<< show) pixels
   -- [Pixel] -> [Real]
   let
-    magnitude = 10.0
+    magnitude = 0.1
     size = toNumber $ length pixels
 
     normalizer :: EndoReal
@@ -93,4 +94,17 @@ main = do
 
     coord :: List Real
     coord = act normalizer $ toNumber <$> pixels
-  traverse_ (log <<< show) coord
+  -- traverse_ (log <<< show) coord
+  let
+    isBounded :: Real -> Boolean
+    isBounded x = norm x < 2.0
+
+    getEscapeTime :: List EndoReal -> Real -> Maybe Int
+    getEscapeTime fs x = findIndex (not <<< isBounded) (act fs x)
+
+    endos :: List EndoReal
+    endos = take 200 $ repeat $ Endo $ \x -> x * x + 0.0
+
+    es :: List EscapeTime
+    es = getEscapeTime endos <$> coord
+  traverse_ (log <<< show) $ es
