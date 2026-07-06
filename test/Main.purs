@@ -4,17 +4,17 @@ module Test.Main
 
 import Prelude
 
-import Data.Array ((..), foldl)
+import Data.Array ((..))
 import Data.Foldable (traverse_)
 import Data.Int (toNumber)
-import Data.List.Lazy (List, findIndex, fromFoldable, repeat, scanl, take, takeWhile, length)
+import Data.List.Lazy (List, findIndex, fromFoldable, length, repeat, scanl, take, takeWhile)
 import Data.Maybe (Maybe(..))
 import Data.Monoid.Endo (Endo(..))
 import Data.Newtype (unwrap)
 import Data.Number (sqrt)
+import Data.Traversable (traverse)
 import Effect (Effect)
 import Effect.Console (log)
-import JuliaSet.Algorithm (getEscapeTime)
 
 class Ring a <= NormedRing a where
   norm :: a -> Number
@@ -72,66 +72,75 @@ else instance actEListTarget ::
   actE isOk fs zs = (actE isOk fs) <$> zs
 
 -- [Pixel] ->(w/ Screen and Lenz) [Real] ->(w/ actions) [EscapeTime] -> [Color]
-type Pixel = Int
-
-type EndoReal = Endo (->) Real
-type EscapeTime = Maybe Int
-type HSLColor =
-  { h :: Int
-  , s :: Int
-  , l :: Int
-  }
-
-affine :: Real -> Real -> EndoReal
-affine a b = Endo \x -> a * x + b
+type Screen = List Int
+type Pixel = List Int
 
 main :: Effect Unit
 main = do
+  -- Screen -> [Pixel]
   let
+    generatePixel :: Screen -> List Pixel
+    generatePixel = traverse (\d -> fromFoldable (0 .. d))
+    width = 20
+    height = 10
+    screen = fromFoldable [ width, height ]
+
     pixels :: List Pixel
-    pixels = fromFoldable (0 .. 999)
+    pixels = generatePixel screen
 
-  -- traverse_ (log <<< show) pixels
-  -- [Pixel] -> [Real]
-  let
-    magnitude = 0.1
-    size = toNumber $ length pixels
+  traverse_ (log <<< show) pixels
 
-    normalizer :: EndoReal
-    normalizer =
-      affine (1.0 / (magnitude * size)) (-0.5 / magnitude)
+-- type EndoReal = Endo (->) Real
+-- type EscapeTime = Maybe Int
+-- type HSLColor =
+--   { h :: Int
+--   , s :: Int
+--   , l :: Int
+--   }
 
-    coord :: List Real
-    coord = act normalizer $ toNumber <$> pixels
-  -- traverse_ (log <<< show) coord
-  let
-    isBounded :: Real -> Boolean
-    isBounded x = norm x < 2.0
+-- affine :: Real -> Real -> EndoReal
+-- affine a b = Endo \x -> a * x + b
 
-    getEscapeTime :: List EndoReal -> Real -> Maybe Int
-    getEscapeTime fs x = findIndex (not <<< isBounded) (act fs x)
+-- -- [Pixel] -> [Real]
+-- let
+--   magnitude = 0.1
+--   size = toNumber $ length pixels
 
-    endos :: List EndoReal
-    endos = take 200 $ repeat $ Endo $ \x -> x * x + 0.0
+--   normalizer :: EndoReal
+--   normalizer =
+--     affine (1.0 / (magnitude * size)) (-0.5 / magnitude)
 
-    es :: List EscapeTime
-    es = getEscapeTime endos <$> coord
-  -- traverse_ (log <<< show) $ es
+--   coord :: List Real
+--   coord = act normalizer $ toNumber <$> pixels
+-- -- traverse_ (log <<< show) coord
+-- let
+--   isBounded :: Real -> Boolean
+--   isBounded x = norm x < 2.0
 
-  -- [EscapeTime] -> [HSLColor]
-  let
-    etToHSLColor :: EscapeTime -> HSLColor
-    etToHSLColor Nothing =
-      { h: 0
-      , s: 0
-      , l: 0
-      }
-    etToHSLColor (Just n) =
-      { h: n * 5
-      , s: 100
-      , l: 50
-      }
+--   getEscapeTime :: List EndoReal -> Real -> Maybe Int
+--   getEscapeTime fs x = findIndex (not <<< isBounded) (act fs x)
 
-    hslcolors :: List HSLColor
-    hslcolors = etToHSLColor <$> es
-  traverse_ (log <<< show) $ hslcolors
+--   endos :: List EndoReal
+--   endos = take 200 $ repeat $ Endo $ \x -> x * x + 0.0
+
+--   es :: List EscapeTime
+--   es = getEscapeTime endos <$> coord
+-- -- traverse_ (log <<< show) $ es
+
+-- -- [EscapeTime] -> [HSLColor]
+-- let
+--   etToHSLColor :: EscapeTime -> HSLColor
+--   etToHSLColor Nothing =
+--     { h: 0
+--     , s: 0
+--     , l: 0
+--     }
+--   etToHSLColor (Just n) =
+--     { h: n * 5
+--     , s: 100
+--     , l: 50
+--     }
+
+--   hslcolors :: List HSLColor
+--   hslcolors = etToHSLColor <$> es
+-- traverse_ (log <<< show) $ hslcolors
