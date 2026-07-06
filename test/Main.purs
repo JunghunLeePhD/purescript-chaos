@@ -8,7 +8,7 @@ import Data.Array ((..), foldl)
 import Data.Foldable (traverse_)
 import Data.Int (toNumber)
 import Data.List.Lazy (List, findIndex, fromFoldable, repeat, scanl, take, takeWhile, length)
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Monoid.Endo (Endo(..))
 import Data.Newtype (unwrap)
 import Data.Number (sqrt)
@@ -67,10 +67,10 @@ instance normedRingReal :: NormedRing Real where
 
 type EndoReal = Endo (->) Real
 type EscapeTime = Maybe Int
-type Color =
-  { r :: Int
-  , g :: Int
-  , b :: Int
+type HSLColor =
+  { h :: Int
+  , s :: Int
+  , l :: Int
   }
 
 affine :: Real -> Real -> EndoReal
@@ -107,4 +107,22 @@ main = do
 
     es :: List EscapeTime
     es = getEscapeTime endos <$> coord
-  traverse_ (log <<< show) $ es
+  -- traverse_ (log <<< show) $ es
+
+  -- [EscapeTime] -> [HSLColor]
+  let
+    etToHSLColor :: EscapeTime -> HSLColor
+    etToHSLColor Nothing =
+      { h: 0
+      , s: 0
+      , l: 0
+      }
+    etToHSLColor (Just n) =
+      { h: n * 5
+      , s: 100
+      , l: 50
+      }
+
+    hslcolors :: List HSLColor
+    hslcolors = etToHSLColor <$> es
+  traverse_ (log <<< show) $ hslcolors
