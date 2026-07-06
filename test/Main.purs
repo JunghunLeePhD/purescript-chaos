@@ -19,6 +19,31 @@ import JuliaSet.Algorithm (getEscapeTime)
 class Ring a <= NormedRing a where
   norm :: a -> Number
 
+-- Type: complex number as normed ring
+type Real = Number
+data Complex = Complex Real Real
+
+derive instance eqComplex :: Eq Complex
+instance showComplex :: Show Complex where
+  show (Complex r i) = show r <> " + " <> show i <> "i"
+
+instance semiringComplex :: Semiring Complex where
+  add (Complex r1 i1) (Complex r2 i2) = Complex (r1 + r2) (i1 + i2)
+  zero = Complex 0.0 0.0
+  mul (Complex r1 i1) (Complex r2 i2) = Complex (r1 * r2 - i1 * i2) (r1 * i2 + r2 * i1)
+  one = Complex 1.0 0.0
+
+instance ringComplex :: Ring Complex where
+  sub (Complex r1 i1) (Complex r2 i2) = Complex (r1 - r2) (i1 - i2)
+
+instance normedRingReal :: NormedRing Real where
+  norm x
+    | x < 0.0 = -x
+    | otherwise = x
+
+instance normedRingComplex :: NormedRing Complex where
+  norm (Complex r i) = sqrt (norm r + norm i)
+
 class PolymorphicAction actor target result | actor target -> result where
   act :: actor -> target -> result
 
@@ -46,24 +71,8 @@ else instance actEListTarget ::
   PolymorphicActionE actor (List target) (List result) element where
   actE isOk fs zs = (actE isOk fs) <$> zs
 
-escapeTime
-  :: forall actor target
-   . (PolymorphicAction (List actor) target (List target))
-  => (target -> Boolean)
-  -> List actor
-  -> target
-  -> Maybe Int
-escapeTime isOk fs z =
-  findIndex (not <<< isOk) (act fs z)
-
 -- [Pixel] ->(w/ Screen and Lenz) [Real] ->(w/ actions) [EscapeTime] -> [Color]
 type Pixel = Int
-type Real = Number
-
-instance normedRingReal :: NormedRing Real where
-  norm x
-    | x < 0.0 = -x
-    | otherwise = x
 
 type EndoReal = Endo (->) Real
 type EscapeTime = Maybe Int
