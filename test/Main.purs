@@ -6,11 +6,12 @@ import Prelude
 
 import Data.Array ((..), foldl)
 import Data.Foldable (traverse_)
-import Data.List.Lazy (List, findIndex, fromFoldable, repeat, scanl, take, takeWhile)
+import Data.List.Lazy (List, findIndex, fromFoldable, repeat, scanl, take, takeWhile, length)
 import Data.Maybe (Maybe)
-import Data.Monoid.Endo (Endo)
+import Data.Monoid.Endo (Endo(..))
 import Data.Newtype (unwrap)
 import Data.Number (sqrt)
+import Data.Int (toNumber)
 import Effect (Effect)
 import Effect.Console (log)
 
@@ -71,9 +72,25 @@ type Color =
   , b :: Int
   }
 
+affine :: Real -> Real -> EndoReal
+affine a b = Endo \x -> a * x + b
+
 main :: Effect Unit
 main = do
   let
     pixels :: List Pixel
-    pixels = fromFoldable (0 .. 100)
-  traverse_ (log <<< show) pixels
+    pixels = fromFoldable (0 .. 99)
+
+  -- traverse_ (log <<< show) pixels
+  -- [Pixel] -> [Real]
+  let
+    magnitude = 10.0
+    size = toNumber $ length pixels
+
+    normalizer :: EndoReal
+    normalizer =
+      affine (1.0 / (magnitude * size)) (-0.5 / magnitude)
+
+    coord :: List Real
+    coord = act normalizer $ toNumber <$> pixels
+  traverse_ (log <<< show) coord
