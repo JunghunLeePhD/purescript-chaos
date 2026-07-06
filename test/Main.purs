@@ -7,14 +7,14 @@ import Prelude
 import Data.Array ((..))
 import Data.Foldable (traverse_)
 import Data.Int (toNumber)
-import Data.List.Lazy (List, findIndex, fromFoldable, length, repeat, scanl, take, takeWhile, zipWith)
+import Data.List.Lazy (List, findIndex, fromFoldable, length, repeat, scanl, take, takeWhile, zipWith, (!!))
 import Data.Maybe (Maybe(..))
 import Data.Monoid.Endo (Endo(..))
 import Data.Newtype (unwrap)
 import Data.Number (sqrt)
 import Data.Traversable (traverse)
 import Effect (Effect)
-import Effect.Console (log)
+import Effect.Console (logShow)
 
 class Ring a <= NormedRing a where
   norm :: a -> Number
@@ -50,31 +50,24 @@ class PolymorphicAction actor target result | actor target -> result where
 instance actEndoAny :: PolymorphicAction (Endo (->) a) a a where
   act = unwrap
 
-else instance actListEndoAny :: PolymorphicAction (List (Endo (->) a)) a (List a) where
+else instance actListEndoAny ::
+  PolymorphicAction (List (Endo (->) a)) a (List a) where
   act fs z = scanl (\acc f -> act f acc) z fs
 
-else instance actListTarget ::
-  ( PolymorphicAction actor target result
+else instance actListEndoListAny ::
+  ( PolymorphicAction (List (Endo (->) a)) a (List a)
   ) =>
-  PolymorphicAction actor (List target) (List result) where
-  act = map <<< act
+  PolymorphicAction (List (Endo (->) a)) (List a) (List (List a)) where
+  act fs zs = act fs <$> zs
 
-class PolymorphicActionE actor target result element | actor target -> result element where
-  actE :: (element -> Boolean) -> actor -> target -> result
-
-instance actEListEndoNormed :: NormedRing a => PolymorphicActionE (List (Endo (->) a)) a (List a) a where
-  actE isOk fs z = takeWhile isOk (act fs z)
-
-else instance actEListTarget ::
-  ( PolymorphicActionE actor target result element
-  ) =>
-  PolymorphicActionE actor (List target) (List result) element where
-  actE isOk fs zs = (actE isOk fs) <$> zs
+else instance actFunction :: PolymorphicAction (a -> b) a b where
+  act f x = f x
 
 -- [Pixel] ->(w/ Screen and Lenz) [Real] ->(w/ actions) [EscapeTime] -> [Color]
 type Screen = List Int
 type Pixel = List Int
 type EndoReal = Endo (->) Real
+type EscapeTime = Maybe Int
 
 main :: Effect Unit
 main = do
@@ -89,10 +82,10 @@ main = do
     pixels :: List Pixel
     pixels = generatePixel screen
 
-  -- [Pixel] -> [Real]
+  -- [Pixel] -> [[Real]]
   let
     affine :: Real -> Real -> EndoReal
-    affine a b = Endo \x -> a * x + b
+    affine a b = Endo $ \x -> a * x + b
 
     magnitude = 1.0
 
@@ -102,32 +95,34 @@ main = do
       , affine (1.0 / (magnitude * toNumber height)) (-0.5 / magnitude)
       ]
 
-    coord =
-      (zipWith act normalizer <<< map toNumber) <$> pixels
-  -- (zipWith act normalizer) <$> (map toNumber <$> pixels)
-  traverse_ (log <<< show) coord
+    fromLazyListToComplex :: List Real -> Maybe Complex
+    fromLazyListToComplex lazyList =
+      Complex <$> (lazyList !! 0) <*> (lazyList !! 1)
 
--- type EscapeTime = Maybe Int
--- type HSLColor =
---   { h :: Int
---   , s :: Int
---   , l :: Int
---   }
+    cpxs =
+      (fromLazyListToComplex <<< (zipWith act normalizer) <<< map toNumber) <$> pixels
+  traverse_ (logShow) cpxs
 
 -- let
 --   isBounded :: Real -> Boolean
 --   isBounded x = norm x < 2.0
 
---   getEscapeTime :: List EndoReal -> Real -> Maybe Int
+--   getEscapeTime :: List EndoComplex -> Real -> Maybe Int
 --   getEscapeTime fs x = findIndex (not <<< isBounded) (act fs x)
 
 --   endos :: List EndoReal
 --   endos = take 200 $ repeat $ Endo $ \x -> x * x + 0.0
 
---   es :: List EscapeTime
---   es = getEscapeTime endos <$> coord
--- -- traverse_ (log <<< show) $ es
+--   et :: List EscapeTime
+--   et =
+--     getEscapeTime endos <$> cpxs
 
+-- traverse_ (logShow) et
+-- type HSLColor =
+--   { h :: Int
+--   , s :: Int
+--   , l :: Int
+--   }
 -- -- [EscapeTime] -> [HSLColor]
 -- let
 --   etToHSLColor :: EscapeTime -> HSLColor
