@@ -1,4 +1,4 @@
-module JuliaSet.NormedRing where
+module JuliaSet.Space where
 
 import Prelude
 import Data.Number (sqrt)
