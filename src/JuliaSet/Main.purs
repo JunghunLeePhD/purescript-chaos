@@ -16,6 +16,16 @@ import Graphics.Canvas
   , getContext2D
   )
 
+import Data.Array ((..))
+import Data.List.Lazy (List, fromFoldable)
+import Data.Traversable (traverse)
+
+type Screen = List Int
+type Pixel = List Int
+
+generatePixel :: Screen -> List Pixel
+generatePixel = traverse (\d -> fromFoldable (0 .. d))
+
 main :: Effect Unit
 main = launchAff_ do
   finalResult <- runExceptT do
@@ -27,6 +37,10 @@ main = launchAff_ do
       width <- floor <$> getCanvasWidth canvas
       height <- floor <$> getCanvasHeight canvas
 
+      let
+        -- Screen -> [Pixel]
+        screen = fromFoldable [ width, height ]
+        pixels = generatePixel screen
       pure $ unit
     pure $ unit
 
