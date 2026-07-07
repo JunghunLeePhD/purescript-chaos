@@ -38,6 +38,11 @@ type Pixel = List Int
 type EndoReal = Endo (->) Real
 type EndoComplex = Endo (->) Complex
 type EscapeTime = Maybe Int
+type HSLColor =
+  { h :: Int
+  , s :: Int
+  , l :: Int
+  }
 
 generatePixel :: Screen -> List Pixel
 generatePixel = traverse (\d -> fromFoldable (0 .. d))
@@ -51,6 +56,18 @@ getComplex lazyList =
 
 isNotBounded :: Complex -> Boolean
 isNotBounded z = norm z > 2.0
+
+etToHSLColor :: EscapeTime -> HSLColor
+etToHSLColor Nothing =
+  { h: 0
+  , s: 0
+  , l: 0
+  }
+etToHSLColor (Just n) =
+  { h: n * 5
+  , s: 100
+  , l: 50
+  }
 
 main :: Effect Unit
 main = launchAff_ do
@@ -86,6 +103,9 @@ main = launchAff_ do
           -- mOrbit :: List (Maybe (List Complex))
           mOrbit <- (act endos <$> cpxs)
           pure $ mOrbit >>= findIndex (isNotBounded)
+
+        hslcolors :: List HSLColor
+        hslcolors = etToHSLColor <$> et
 
       pure $ unit
     pure $ unit
