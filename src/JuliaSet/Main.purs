@@ -19,16 +19,25 @@ import Graphics.Canvas
 import Data.Array ((..))
 import Data.Maybe (Maybe(..))
 import Data.Monoid.Endo (Endo(..))
-import Data.List.Lazy (List, fromFoldable, (!!), zipWith)
+import Data.List.Lazy
+  ( List
+  , fromFoldable
+  , (!!)
+  , zipWith
+  , take
+  , repeat
+  , findIndex
+  )
 import Data.Traversable (traverse)
 
-import JuliaSet.Space (Real, Complex(..))
+import JuliaSet.Space (Real, Complex(..), norm)
 import JuliaSet.Endomorphism (act)
 
 type Screen = List Int
 type Pixel = List Int
 type EndoReal = Endo (->) Real
 type EndoComplex = Endo (->) Complex
+type EscapeTime = Maybe Int
 
 generatePixel :: Screen -> List Pixel
 generatePixel = traverse (\d -> fromFoldable (0 .. d))
@@ -39,6 +48,9 @@ affine a b = Endo $ \x -> a * x + b
 getComplex :: List Real -> Maybe Complex
 getComplex lazyList =
   Complex <$> (lazyList !! 0) <*> (lazyList !! 1)
+
+isNotBounded :: Complex -> Boolean
+isNotBounded z = norm z > 2.0
 
 main :: Effect Unit
 main = launchAff_ do
@@ -65,6 +77,15 @@ main = launchAff_ do
 
         cpxs =
           (getComplex <<< (zipWith act normalizer) <<< map toNumber) <$> pixels
+
+        endos :: List EndoComplex
+        endos = take 3 $ repeat $ Endo $ \z -> z * z + (Complex 0.0 0.0)
+
+        et :: List EscapeTime
+        et = do
+          -- mOrbit :: List (Maybe (List Complex))
+          mOrbit <- (act endos <$> cpxs)
+          pure $ mOrbit >>= findIndex (isNotBounded)
 
       pure $ unit
     pure $ unit
