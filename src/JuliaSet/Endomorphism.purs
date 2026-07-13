@@ -21,3 +21,7 @@ else instance actMaybeTarget ::
 else instance actListEndoAny ::
   PolymorphicAction (List (Endo (->) a)) a (List a) where
   act fs z = scanl (\acc f -> act f acc) z fs
+
+else instance actArrayEndoAny ::
+  PolymorphicAction (Array (Endo (->) a)) a (Array a) where
+  act fs z = scanl (\acc f -> act f acc) z fs
