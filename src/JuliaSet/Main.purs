@@ -10,15 +10,19 @@ import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
 import Graphics.Canvas
-  ( getCanvasElementById
+  ( Context2D
+  , getCanvasElementById
   , getCanvasHeight
   , getCanvasWidth
   , getContext2D
+  , setFillStyle
+  , fillRect
   )
 
 import Data.Array ((..))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Monoid.Endo (Endo(..))
+import Data.Foldable (sequence_)
 import Data.List.Lazy
   ( List
   , fromFoldable
@@ -69,6 +73,23 @@ etToHSLColor (Just n) =
   , l: 50
   }
 
+fillColor :: Context2D -> Pixel -> HSLColor -> Effect Unit
+fillColor ctx pixel hslcolor = do
+  setFillStyle ctx $ hslColorText hslcolor
+  let
+    xPos = toNumber (fromMaybe 0 (pixel !! 0))
+    yPos = toNumber (fromMaybe 0 (pixel !! 1))
+  fillRect ctx
+    { x: xPos
+    , y: yPos
+    , width: 1.0
+    , height: 1.0
+    }
+  where
+  hslColorText :: HSLColor -> String
+  hslColorText { h, s, l } =
+    "hsl(" <> show h <> ", " <> show s <> "%, " <> show l <> "%)"
+
 main :: Effect Unit
 main = launchAff_ do
   finalResult <- runExceptT do
@@ -107,6 +128,7 @@ main = launchAff_ do
         hslcolors :: List HSLColor
         hslcolors = etToHSLColor <$> et
 
+      sequence_ $ zipWith (fillColor ctx) pixels hslcolors
       pure $ unit
     pure $ unit
 
