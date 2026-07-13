@@ -2,11 +2,13 @@ module JuliaSet.Main where
 
 import Prelude
 
-import Control.Monad.Except (runExceptT, except)
+import Control.Monad.Except (ExceptT, runExceptT, except)
+import Control.Monad.Trans.Class (lift)
+
 import Data.Either (Either(..), note)
 import Data.Int (floor, toNumber)
 import Effect (Effect)
-import Effect.Aff (launchAff_)
+import Effect.Aff (launchAff_, delay, Milliseconds(..), Aff)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
 import Graphics.Canvas
@@ -19,26 +21,24 @@ import Graphics.Canvas
   , fillRect
   )
 
-import Data.Array ((..))
+import Data.Array
+  ( (..)
+  , (!!)
+  , zipWith
+  , findIndex
+  , fromFoldable
+  , replicate
+  )
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Monoid.Endo (Endo(..))
 import Data.Foldable (sequence_)
-import Data.List.Lazy
-  ( List
-  , fromFoldable
-  , (!!)
-  , zipWith
-  , take
-  , repeat
-  , findIndex
-  )
 import Data.Traversable (traverse)
 
 import JuliaSet.Space (Real, Complex(..), norm)
 import JuliaSet.Endomorphism (act)
 
-type Screen = List Int
-type Pixel = List Int
+type Screen = Array Int
+type Pixel = Array Int
 type EndoReal = Endo (->) Real
 type EndoComplex = Endo (->) Complex
 type EscapeTime = Maybe Int
@@ -48,13 +48,13 @@ type HSLColor =
   , l :: Int
   }
 
-generatePixel :: Screen -> List Pixel
+generatePixel :: Screen -> Array Pixel
 generatePixel = traverse (\d -> fromFoldable (0 .. d))
 
 affine :: Real -> Real -> EndoReal
 affine a b = Endo $ \x -> a * x + b
 
-getComplex :: List Real -> Maybe Complex
+getComplex :: Array Real -> Maybe Complex
 getComplex lazyList =
   Complex <$> (lazyList !! 0) <*> (lazyList !! 1)
 
@@ -96,41 +96,38 @@ main = launchAff_ do
     mCanvas <- liftEffect $ getCanvasElementById "juliaCanvas"
     canvas <- except $ note "Canvas element 'juliaCanvas' not found!" mCanvas
 
-    liftEffect $ do
-      ctx <- getContext2D canvas
-      width <- floor <$> getCanvasWidth canvas
-      height <- floor <$> getCanvasHeight canvas
+    ctx <- liftEffect $ getContext2D canvas
+    width <- liftEffect $ floor <$> getCanvasWidth canvas
+    height <- liftEffect $ floor <$> getCanvasHeight canvas
 
-      let
-        -- Screen -> [Pixel]
-        screen = fromFoldable [ width, height ]
-        pixels = generatePixel screen
-        magnitude = 0.01
+    let
+      magnitude = 0.3
 
-        normalizer :: List EndoReal
-        normalizer = fromFoldable
-          [ affine (1.0 / (magnitude * toNumber width)) (-0.5 / magnitude)
-          , affine (1.0 / (magnitude * toNumber height)) (-0.5 / magnitude)
-          ]
+      endos :: Array EndoComplex
+      endos = replicate 50 $ Endo $ \z -> z * z + (Complex (-0.835) (-0.2321))
 
-        cpxs =
-          (getComplex <<< (zipWith act normalizer) <<< map toNumber) <$> pixels
+      renderRow :: Int -> ExceptT String Aff Unit
+      renderRow y | y >= height = pure unit
+      renderRow y = do
+        let
+          rowPixels = (\x -> [ x, y ]) <$> (0 .. (width - 1))
 
-        endos :: List EndoComplex
-        endos = take 3 $ repeat $ Endo $ \z -> z * z + (Complex 0.0 0.0)
+          normalizer =
+            [ affine (1.0 / (magnitude * toNumber width)) (-0.5 / magnitude)
+            , affine (1.0 / (magnitude * toNumber height)) (-0.5 / magnitude)
+            ]
 
-        et :: List EscapeTime
-        et = do
-          -- mOrbit :: List (Maybe (List Complex))
-          mOrbit <- (act endos <$> cpxs)
-          pure $ mOrbit >>= findIndex (isNotBounded)
+          cpxs = (getComplex <<< (zipWith act normalizer) <<< map toNumber) <$> rowPixels
+          et = (\mCpx -> mCpx >>= \cpx -> findIndex isNotBounded (act endos cpx)) <$> cpxs
+          hslcolors = etToHSLColor <$> et
 
-        hslcolors :: List HSLColor
-        hslcolors = etToHSLColor <$> et
+        liftEffect $ sequence_ (zipWith (fillColor ctx) rowPixels hslcolors)
 
-      sequence_ $ zipWith (fillColor ctx) pixels hslcolors
-      pure $ unit
-    pure $ unit
+        lift $ delay (Milliseconds 0.0)
+
+        renderRow (y + 1)
+
+    renderRow 0
 
   case finalResult of
     Left errorMsg -> liftEffect $ log errorMsg
